@@ -1,0 +1,36 @@
+{
+  "characters": {
+    "ganesha": "../characters/ganesha_ref.png",
+    "vyasa": "../characters/vyasa_ref_front.png"
+  },
+  "voices": {
+    "vyasa": "pqHfZKP75CvOlQylNhV4",
+    "ganesha": "bIHbv24MWmeRgasZH58o"
+  },
+  "shots": [
+    {
+      "id": "shot_2_dialogue_test",
+      "characters": ["vyasa", "ganesha"],
+      "prompt": "@Element1 (Vyasa), an elderly sage, says earnestly: 'I need a scribe swift enough to keep pace with my verses.' @Element2 (Ganesha), a young elephant-headed deity, replies warmly: 'I accept, but once I begin, my pen will not stop.' @Element1 (Vyasa) responds firmly: 'Then hear my condition too, you must understand every verse before you write it.' Natural back-and-forth conversation in a forest hermitage, palm leaves and an ink pot nearby, synchronized lip movement matching each line, single trunk on Element2, Pixar-style 3D toon animation",
+      "duration": "15",
+      "aspect_ratio": "9:16",
+      "generate_audio": true
+    },
+    {
+      "id": "shot_ganesha_solo_silent",
+      "characters": ["ganesha"],
+      "prompt": "@Element1 (Ganesha) speaking warmly and naturally to someone off-camera, mouth moving as if talking, expressive hand gesture, seated in a forest hermitage, single trunk, Pixar-style 3D toon animation",
+      "duration": "8",
+      "aspect_ratio": "9:16",
+      "generate_audio": false
+    },
+    {
+      "id": "shot_together_silent",
+      "characters": ["vyasa", "ganesha"],
+      "prompt": "@Element1 (Vyasa) and @Element2 (Ganesha) seated together in a forest hermitage, both gesturing and speaking naturally as if in conversation, mouths moving as if talking, palm leaves and an ink pot nearby, single trunk on Element2, Pixar-style 3D toon animation",
+      "duration": "8",
+      "aspect_ratio": "9:16",
+      "generate_audio": false
+    }
+  ]
+}

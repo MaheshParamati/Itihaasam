@@ -34,8 +34,8 @@ OUTPUT_DIR = POC_DIR / "output"
 MODEL_ID = "fal-ai/kling-video/o3/standard/reference-to-video"
 
 
-def load_shots():
-    with open(POC_DIR / "shots.json") as f:
+def load_shots(filename: str):
+    with open(POC_DIR / filename) as f:
         return json.load(f)
 
 
@@ -60,7 +60,7 @@ def build_payload(shot: dict, char_urls: dict) -> dict:
         "elements": elements,
         "duration": shot["duration"],
         "aspect_ratio": shot["aspect_ratio"],
-        "generate_audio": False,
+        "generate_audio": shot.get("generate_audio", False),
     }
 
 
@@ -99,12 +99,13 @@ def main():
     parser.add_argument("shot_id", nargs="?", help="e.g. shot_4")
     parser.add_argument("--all", action="store_true", help="generate every shot")
     parser.add_argument("--dry-run", action="store_true", help="print payload only, no API call")
+    parser.add_argument("--file", default="shots.json", help="shots config file (default: shots.json)")
     args = parser.parse_args()
 
     if not os.getenv("FAL_KEY") and not args.dry_run:
         sys.exit("FAL_KEY is not set. Copy .env.example to .env and fill it in.")
 
-    data = load_shots()
+    data = load_shots(args.file)
     characters = data["characters"]
     shots = {s["id"]: s for s in data["shots"]}
 

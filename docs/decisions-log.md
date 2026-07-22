@@ -54,6 +54,18 @@ Chronological record of real problems hit during the Stage 1 POC and how they we
 - ElevenLabs narration: negligible (~$0.09 for a ~57s script).
 - Projected at daily cadence (30 episodes/month): **~$150/mo** for video generation alone, matching the original estimate in `automation-architecture.md`.
 
+## Lip sync fails on Ganesha's face (non-human character)
+
+**Problem:** Dedicated audio-to-video lip-sync tools require detecting a face in the source video before dubbing it. Tested two fal.ai-hosted models against a silent solo clip of Ganesha (elephant head):
+- `fal-ai/kling-video/lipsync/audio-to-video` (landmark/detection-based) — failed with `face_detection_error` on 2 of 3 identical attempts (English, Telugu failed; Hindi succeeded on the exact same video — detection is inconsistent, not a hard rule).
+- `fal-ai/latentsync` (landmark-free, audio-conditioned latent diffusion, marketed as supporting "real-life and anime" faces) — also failed, identical error wording, after visibly running real GPU work first (not a free pre-flight rejection).
+
+The identical error message across two architecturally different models suggests fal.ai may apply a **shared face-detection gate across its lip-sync category**, not a per-model limitation. Not yet confirmed — would need a lip-sync tool on a different platform entirely (not fal.ai) to isolate whether this is fal.ai-specific or universal to non-human character design.
+
+**Separate finding — multi-character scenes:** tested `kling-video/lipsync/audio-to-video` on a clip with both Vyasa and Ganesha in frame, fed only Ganesha's audio line. It detected Vyasa's face (human-presenting, reliably detected) and synced *his* mouth to *Ganesha's* audio — a wrong pairing, not a partial success. Ganesha's own mouth kept whatever generic motion was in the original silent clip, unsynced. This tool is built for single-speaker dubbing, not per-character audio assignment in a multi-face scene — confirmed by testing, not just inferred from docs.
+
+**Not yet resolved.** Options on the table, not yet decided: try a different platform specifically marketed for cartoon/mascot faces (DomoAI, LipsyncX, Sync Labs — all require new account/billing setup, not just a new fal.ai model); fall back to native Kling dialogue for English only and accept non-lip-synced narration for Ganesha's Hindi/Telugu lines; or restructure scenes so Ganesha is never the sole/primary face being dubbed.
+
 ## fal.ai API schema notes
 
 The public docs for `fal-ai/kling-video/o3/standard/reference-to-video` don't fully specify the `elements` sub-schema. Confirmed by hitting the real API: each element needs **both** `frontal_image_url` (string) and `reference_image_urls` (list) — a partial payload like `{"image_urls": [...]}` gets rejected with a 422 (free, no charge — validation errors don't cost anything). When in doubt about an fal.ai model's exact parameter names, a dry-run/validation-error round trip is free; use it before assuming the docs are complete.

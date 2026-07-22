@@ -1,6 +1,10 @@
-# Lip Sync & Character Voices — Active Brainstorm
+# Lip Sync & Character Voices — Original Brainstorm (superseded)
 
-Status: **not yet implemented, not yet tested.** This is the plan as discussed, written down before spending anything against it. Next concrete step is a single-line A/B test (see bottom).
+**Superseded by [lipsync-investigation.md](lipsync-investigation.md)** — that doc has the actual test results, costs, and current unresolved issue. This file is kept as the historical record of the plan *before* anything below was tested; several assumptions here (e.g. which option would need testing first) didn't survive contact with the real APIs. Read the investigation doc for current status.
+
+---
+
+Status at time of writing: **not yet implemented, not yet tested.** This is the plan as discussed, written down before spending anything against it. Next concrete step is a single-line A/B test (see bottom).
 
 ## The pivot
 
