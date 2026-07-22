@@ -1,0 +1,50 @@
+{
+  "characters": {
+    "ganesha": "../characters/ganesha_ref.png",
+    "vyasa": "../characters/vyasa_ref_front.png"
+  },
+  "shots": [
+    {
+      "id": "shot_1",
+      "characters": ["vyasa"],
+      "prompt": "@Element1 the sage sits alone in a forest hermitage at dawn, deep in thought, soft morning light, gentle breeze moving the leaves, Pixar-style 3D toon animation",
+      "duration": "10",
+      "aspect_ratio": "9:16"
+    },
+    {
+      "id": "shot_2",
+      "characters": ["vyasa", "ganesha"],
+      "prompt": "@Element1 and @Element2 face each other in conversation in a forest hermitage, palm leaves and an ink pot nearby, @Element1 speaking earnestly, @Element2 nodding in agreement, @Element2 has a single trunk, Pixar-style 3D toon animation",
+      "duration": "11",
+      "aspect_ratio": "9:16"
+    },
+    {
+      "id": "shot_3",
+      "characters": ["vyasa", "ganesha"],
+      "prompt": "@Element1 speaking verses while @Element2 writes swiftly with a peacock feather quill on a large palm-leaf manuscript resting on a low wooden writing desk in front of him, both focused and in flow, @Element2 has a single trunk, Pixar-style 3D toon animation",
+      "duration": "10",
+      "aspect_ratio": "9:16"
+    },
+    {
+      "id": "shot_4",
+      "characters": ["ganesha"],
+      "prompt": "close up on @Element1 writing furiously with a peacock feather quill on a palm-leaf manuscript to keep pace, suddenly the tusk snaps with a small dramatic motion, the feather quill flying from his startled hand, a brief flash of surprise crossing the face, @Element1 has a single trunk, Pixar-style 3D toon animation",
+      "duration": "6",
+      "aspect_ratio": "9:16"
+    },
+    {
+      "id": "shot_5",
+      "characters": ["ganesha"],
+      "prompt": "@Element1 calmly picks up the broken tusk piece from the desk and resumes writing with it on the palm-leaf manuscript without pausing, steady and determined expression, @Element1 has a single trunk, Pixar-style 3D toon animation",
+      "duration": "8",
+      "aspect_ratio": "9:16"
+    },
+    {
+      "id": "shot_6",
+      "characters": ["vyasa", "ganesha"],
+      "prompt": "wide shot of @Element1 and @Element2 seated calmly beside a tall finished stack of palm-leaf manuscripts, the peacock feather quill and broken tusk piece resting on the desk beside them, warm serene lighting, @Element2 has a single trunk, Pixar-style 3D toon animation",
+      "duration": "11",
+      "aspect_ratio": "9:16"
+    }
+  ]
+}
