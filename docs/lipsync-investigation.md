@@ -64,7 +64,22 @@ Different architecture entirely — audio-conditioned latent diffusion via Whisp
 
 ---
 
-## 3. Cost so far (approximate — verify exact totals against fal.ai/ElevenLabs dashboards)
+## 3. Platform alternative considered: Pollo.ai (research only, no paid test run)
+
+Raised because a cheaper regional (India, ~₹3000/mo) subscription price was spotted. Investigated via their actual docs/pricing pages before spending anything — **mostly ruled out**, for reasons worth recording so it isn't re-investigated later.
+
+- **Real platform, not a dead end like Leonardo AI.** Pollo has a genuine developer API (`api.pollo.ai`) with real USD pay-as-you-go billing, hosting the same underlying Kling 3.0 Omni model used via fal.ai.
+- **Billing mismatch risk, confirmed:** Pollo's own docs state "API credits and user credits operate independently and are not interchangeable." The cheap ₹3000/mo price is for their consumer **web app** subscription — it does **not** grant API access. API usage requires the separate USD-billed system, minimum top-up **$80** (vs. fal.ai's flexible $10). Same category of mistake as Leonardo AI's free tier and Google AI Pro's subscription — verified this time via their own documentation, not just suspected.
+- **Cost, if switching purely for video generation:** genuinely ~20–25% cheaper than fal.ai for equivalent Kling calls, confirmed via Pollo's own price-comparison table (e.g. $0.066/sec vs. their listed $0.084/sec for fal.ai on an 8s Kling V3 Omni clip) — consistent with our own measured fal.ai rate of ~$0.094/sec.
+- **Language support — same wall, not a fix:** Pollo's Kling access is the identical model, with the identical 5-language limit (English, Chinese, Japanese, Korean, Spanish). Community attempts to force Hindi through it report degraded, robotic, sync-error-prone output — not production quality. Telugu wasn't even mentioned as attempted.
+- **No evidence of a dedicated lip-sync/dubbing endpoint** (the thing we actually need, per section 2's Attempts 2–3) — separate from native dialogue generation. Doesn't address the Ganesha face-detection problem at all.
+- **Open, unverified thread:** Pollo also hosts **Seedance 1.5 Pro / 2.0**, advertised as supporting "global languages" for native audio more broadly than Kling. No concrete language list found confirming Hindi/Telugu, and nothing has been tested — worth a small check if someone wants to chase it, but treat as unverified marketing copy until proven otherwise (same skepticism applied to everything else in this doc).
+
+**Conclusion: not adopted.** Doesn't solve either open problem (no dedicated lip-sync tool, same Hindi/Telugu gap on the video-gen side), and the cost savings only apply to the video-generation step that already works fine on fal.ai — not the step that's actually blocked. Cost of this research: $0 (no API calls made against Pollo).
+
+---
+
+## 4. Cost so far (approximate — verify exact totals against fal.ai/ElevenLabs dashboards)
 
 | Item | Approx. cost |
 |---|---|
@@ -77,13 +92,13 @@ Different architecture entirely — audio-conditioned latent diffusion via Whisp
 
 ---
 
-## 4. The core unresolved issue
+## 5. The core unresolved issue
 
 **No tool tested so far can reliably lip-sync Ganesha's non-human face, and no tool tested handles multi-character scenes (different audio per face) correctly.** Both problems block character-voiced dialogue for this character in any language, not just Hindi/Telugu.
 
 ---
 
-## 5. What to try next (none of this attempted yet)
+## 6. What to try next (none of this attempted yet)
 
 1. **A lip-sync platform outside fal.ai**, specifically ones marketed for cartoon/anime/mascot faces rather than human dubbing: **DomoAI**, **LipsyncX**, **Sync Labs** were all surfaced in research as handling non-human characters. None have been verified to have an actual callable API yet (as opposed to a consumer web UI only) — check that first, the same way Leonardo AI turned out to be a dead end early in this project. This is the most direct way to test whether the fal.ai-wide-gate theory is correct.
 2. **A true multi-character lip-sync tool**, for the separate "two characters, two audio tracks, one clip" problem: Replicate's `zsxkib/multitalk`, or InfiniteTalk Multi were both found to explicitly support this. Different platform/billing than fal.ai — new setup required.
@@ -94,7 +109,7 @@ None of these have been decided yet — this is a menu, not a plan.
 
 ---
 
-## 6. Relevant code
+## 7. Relevant code
 
 - `poc/dialogue_test.json` — shot configs for everything tested here (`shot_2_dialogue_test`, `shot_ganesha_solo_silent`, `shot_together_silent`)
 - `poc/generate_dub.py` — per-character ElevenLabs dubs, any language, reusing locked voice IDs
