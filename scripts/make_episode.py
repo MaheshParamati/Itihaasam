@@ -150,6 +150,10 @@ def _water(mix, t, rng, amp=0.055):
     brown = np.cumsum(white); brown /= np.max(np.abs(brown))
     k = 400
     water = np.convolve(brown, np.ones(k) / k, mode="same")
+    # highpass: strip sub-bass rumble that reads as distortion on small speakers
+    W_ = np.fft.rfft(water); freqs = np.fft.rfftfreq(n, 1 / SR)
+    W_[freqs < 200] = 0
+    water = np.fft.irfft(W_, n)
     swell = 0.6 + 0.4 * np.sin(2 * np.pi * 0.07 * t + 1.0)
     water = amp * swell * water / (np.max(np.abs(water)) + 1e-9)
     mix += water
@@ -287,18 +291,24 @@ def build_segment(ws, asm, b, seg_path, bed_offset=0.0):
     cd, dd = probe_duration(clip), probe_duration(dlg)
     sd = max(cd, lead + dd + tail)
     pad_frames = math.ceil((sd - cd) * FPS) if sd > cd else 0
-    v = (f"[0:v]fps={FPS},scale={W}:{H}:force_original_aspect_ratio=decrease,"
-         f"pad={W}:{H}:(ow-iw)/2:(oh-ih)/2,format=yuv420p")
+    v = (f"[0:v]fps={FPS},split=2[vs1][vs2];"
+         f"[vs1]scale={W}:{H}:force_original_aspect_ratio=increase,"
+         f"crop={W}:{H},gblur=sigma=25[bg];"
+         f"[vs2]scale={W}:{H}:force_original_aspect_ratio=decrease[fg];"
+         f"[bg][fg]overlay=(W-w)/2:(H-h)/2,format=yuv420p")
     if pad_frames > 0:
         v += f",tpad=stop={pad_frames}:stop_mode=clone"
     v += f",trim=duration={sd:.3f},setpts=PTS-STARTPTS[v]"
     # the bed plays continuously across the scene: each beat starts it at its
     # scene offset instead of restarting from 0 (restarts read as a glitch)
     a = (f"[1:a]aresample=48000,adelay={int(lead*1000)}|{int(lead*1000)},"
-         f"apad=whole_dur={sd:.3f},atrim=duration={sd:.3f},asetpts=PTS-STARTPTS[dlg];"
+         f"apad=whole_dur={sd:.3f},atrim=duration={sd:.3f},asetpts=PTS-STARTPTS,"
+         f"asplit=2[dlgsc][dlgout];"
          f"[2:a]aresample=48000,atrim=start={bed_offset:.3f}:duration={sd:.3f},"
          f"asetpts=PTS-STARTPTS,volume={bed_vol}[bed];"
-         f"[dlg][bed]amix=inputs=2:normalize=0[a]")
+         f"[bed][dlgsc]sidechaincompress=threshold=0.03:ratio=6:"
+         f"attack=200:release=500[ducked];"
+         f"[dlgout][ducked]amix=inputs=2:normalize=0[a]")
     run(["ffmpeg", "-y", "-v", "error", "-i", clip, "-i", dlg, "-i", str(bed),
          "-filter_complex", v + ";" + a,
          "-map", "[v]", "-map", "[a]",
