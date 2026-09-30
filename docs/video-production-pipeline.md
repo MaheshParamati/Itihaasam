@@ -4,6 +4,11 @@ The repeatable runbook for producing every Mahabharata story video. Ekalavya's e
 
 Everything is generated in Muse: video clips, reference images, narration/dialogue audio, and music. No external models or API keys.
 
+> **Automation:** `scripts/make_episode.py` implements the deterministic half of this pipeline.
+> `plan` validates the story config and builds exact generation prompts; `music` synthesizes
+> per-scene beds; `assemble` builds and joins segments; `qa` runs the checks. The agent executes
+> the generation steps (clips, TTS) from the manifest the script produces. See `scripts/README.md`.
+
 ---
 
 ## Step 0 — Story workspace setup
