@@ -101,6 +101,9 @@ def cmd_plan(cfg):
             "n": n, "nn": nn, "scene": b["scene"],
             "clip_prompt": clip_prompt, "refs": refs,
             "tts": {"voice": voice, "locale": locale, "line": b["line"], "speaker": sp},
+            # "crop": scale-to-fill 16:9 with a slow vertical pan (for portrait
+            # clips); "blur": full-frame blurred fill (default)
+            "video_fill": b.get("video_fill", "blur"),
         })
 
     manifest = {
@@ -223,11 +226,8 @@ def synth_bed(emotion, total, seed):
     if emotion == "forest_ambient":          # peaceful / devotion
         _drone(mix, t, [(130.81, 0.05), (196.00, 0.035), (261.63, 0.018)], 1.0)
         _water(mix, t, rng); _birds(mix, t, total, rng)
-        _flute(mix, t, total, rng)
     elif emotion == "sorrow":                # sorrow / sacrifice
         _drone(mix, t, [(130.81, 0.035), (196.00, 0.022)], 1.0)
-        _flute(mix, t, total, rng, amp=0.075,
-               scale=[293.66, 329.63, 392.00, 440.00, 392.00], start=3.0)
     elif emotion == "tension":               # tension / confrontation
         _drone(mix, t, [(98.00, 0.055), (73.42, 0.045), (146.83, 0.02)], 1.0,
                breath_rate=0.03)
@@ -237,12 +237,9 @@ def synth_bed(emotion, total, seed):
         _crickets(mix, t, total, rng); _water(mix, t, rng, amp=0.03)
     elif emotion == "reflective":            # epilogue
         _drone(mix, t, [(130.81, 0.04), (196.00, 0.028), (329.63, 0.012)], 1.0)
-        _flute(mix, t, total, rng, amp=0.08, start=4.0)
     elif emotion == "triumph":               # celebration
         _drone(mix, t, [(130.81, 0.05), (164.81, 0.035), (196.00, 0.04),
                         (261.63, 0.025)], 1.0, breath_rate=0.08)
-        _flute(mix, t, total, rng, amp=0.11,
-               scale=[261.63, 293.66, 329.63, 392.00, 523.25], start=1.0)
         _birds(mix, t, total, rng, gap=(4, 8))
     else:
         fail(f"unknown scene emotion '{emotion}' (forest_ambient/sorrow/tension/night/reflective/triumph)")
@@ -296,6 +293,13 @@ def build_segment(ws, asm, b, seg_path, bed_offset=0.0):
          f"crop={W}:{H},gblur=sigma=25[bg];"
          f"[vs2]scale={W}:{H}:force_original_aspect_ratio=decrease[fg];"
          f"[bg][fg]overlay=(W-w)/2:(H-h)/2,format=yuv420p")
+    if b.get("video_fill") == "crop":
+        # portrait (or otherwise mismatched) source: fill the 16:9 frame with
+        # a slow top-to-bottom pan instead of pillarbox/blur sides
+        v = (f"[0:v]fps={FPS},"
+             f"scale={W}:{H}:force_original_aspect_ratio=increase,"
+             f"crop={W}:{H}:x=0:y='(in_h-{H})*0.8*t/{sd:.3f}',"
+             f"format=yuv420p")
     if pad_frames > 0:
         v += f",tpad=stop={pad_frames}:stop_mode=clone"
     v += f",trim=duration={sd:.3f},setpts=PTS-STARTPTS[v]"
