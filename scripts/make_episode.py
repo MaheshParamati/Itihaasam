@@ -161,7 +161,7 @@ def _water(mix, t, rng, amp=0.055):
     water = amp * swell * water / (np.max(np.abs(water)) + 1e-9)
     mix += water
 
-def _birds(mix, t, total, rng, amp=0.045, gap=(6, 11)):
+def _birds(mix, t, total, rng, amp=0.065, gap=(6, 11)):
     n = len(t); ct = 4.0
     while ct < total - 2:
         dur = 0.3 + rng.random() * 0.25
