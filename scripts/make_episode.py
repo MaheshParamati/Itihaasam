@@ -277,7 +277,7 @@ def cmd_music(cfg, manifest=None):
 # acrossfade chains (the fixed construction: every segment's video frames
 # must cover its full declared duration BEFORE the join).
 
-def build_segment(ws, asm, b, seg_path):
+def build_segment(ws, asm, b, seg_path, bed_offset=0.0):
     W, H, FPS = asm["width"], asm["height"], asm["fps"]
     lead, tail, bed_vol = asm["dialogue_lead_in"], asm["dialogue_tail"], asm["bed_volume"]
     clip = glob.glob(str(ws / asm["clip_pattern"].format(nn=b["nn"])))[0]
@@ -292,10 +292,13 @@ def build_segment(ws, asm, b, seg_path):
     if pad_frames > 0:
         v += f",tpad=stop={pad_frames}:stop_mode=clone"
     v += f",trim=duration={sd:.3f},setpts=PTS-STARTPTS[v]"
+    # the bed plays continuously across the scene: each beat starts it at its
+    # scene offset instead of restarting from 0 (restarts read as a glitch)
     a = (f"[1:a]aresample=48000,adelay={int(lead*1000)}|{int(lead*1000)},"
          f"apad=whole_dur={sd:.3f},atrim=duration={sd:.3f},asetpts=PTS-STARTPTS[dlg];"
-         f"[2:a]aresample=48000,atrim=duration={sd:.3f},asetpts=PTS-STARTPTS,"
-         f"volume={bed_vol}[bed];[dlg][bed]amix=inputs=2:normalize=0[a]")
+         f"[2:a]aresample=48000,atrim=start={bed_offset:.3f}:duration={sd:.3f},"
+         f"asetpts=PTS-STARTPTS,volume={bed_vol}[bed];"
+         f"[dlg][bed]amix=inputs=2:normalize=0[a]")
     run(["ffmpeg", "-y", "-v", "error", "-i", clip, "-i", dlg, "-i", str(bed),
          "-filter_complex", v + ";" + a,
          "-map", "[v]", "-map", "[a]",
@@ -313,9 +316,15 @@ def cmd_assemble(cfg, manifest=None, beats=None, out_name=None):
     seg_dir = ws / "segments"; seg_dir.mkdir(exist_ok=True)
 
     sds, seg_paths = [], []
+    scene_elapsed = {}
     for i, b in enumerate(sel):
+        # bed offset: position of this beat within its scene's continuous bed
+        if i == 0 or sel[i-1]["scene"] != b["scene"]:
+            scene_elapsed[b["scene"]] = 0.0
+        offset = scene_elapsed.get(b["scene"], 0.0)
         sp = seg_dir / f"seg_{b['nn']}.mp4"
-        sd = build_segment(ws, asm, b, sp)
+        sd = build_segment(ws, asm, b, sp, bed_offset=offset)
+        scene_elapsed[b["scene"]] = offset + sd - xf
         # verify the segment really covers sd before the join
         vd = probe_duration(sp); vf = count_frames(sp)
         if vd < sd - 0.05 or vf < int((sd - 0.1) * asm["fps"]):
