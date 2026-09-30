@@ -161,15 +161,18 @@ def _water(mix, t, rng, amp=0.055):
     water = amp * swell * water / (np.max(np.abs(water)) + 1e-9)
     mix += water
 
-def _birds(mix, t, total, rng, amp=0.065, gap=(6, 11)):
+def _birds(mix, t, total, rng, amp=0.06, gap=(7, 13)):
+    # slow, gentle chirps: fast FM warbles read as digital glitches, so keep
+    # the vibrato slow and the pitch glide narrow, like real forest birds
     n = len(t); ct = 4.0
     while ct < total - 2:
-        dur = 0.3 + rng.random() * 0.25
+        dur = 0.5 + rng.random() * 0.4
         s0 = int(ct * SR); s1 = min(n, int((ct + dur) * SR))
         tt = np.arange(s1 - s0) / SR
-        f0 = 2600 + rng.random() * 1400; f1 = f0 * (0.7 + rng.random() * 0.6)
+        f0 = 2200 + rng.random() * 1200; f1 = f0 * (0.9 + rng.random() * 0.2)
         freq = f0 + (f1 - f0) * (tt / dur)
-        env = np.sin(np.pi * tt / dur) ** 2 * (0.5 + 0.5 * np.sin(2 * np.pi * 6 * tt))
+        fm_rate = 2.5 + rng.random() * 2.0
+        env = np.sin(np.pi * tt / dur) ** 2 * (0.7 + 0.3 * np.sin(2 * np.pi * fm_rate * tt))
         mix[s0:s1] += amp * env * np.sin(2 * np.pi * np.cumsum(freq) / SR)
         ct += gap[0] + rng.random() * (gap[1] - gap[0])
 
@@ -305,13 +308,17 @@ def build_segment(ws, asm, b, seg_path, bed_offset=0.0):
     v += f",trim=duration={sd:.3f},setpts=PTS-STARTPTS[v]"
     # the bed plays continuously across the scene: each beat starts it at its
     # scene offset instead of restarting from 0 (restarts read as a glitch)
-    a = (f"[1:a]aresample=48000,adelay={int(lead*1000)}|{int(lead*1000)},"
+    # dialogue is loudness-normalized first: the TTS voices come back at very
+    # different levels (Ekalavya ~2.5x the narrator, Drona ~1/3), which made
+    # the sidechain ducking crush the bed under loud voices and skip quiet ones
+    a = (f"[1:a]aresample=48000,loudnorm=I=-16:TP=-1.5:LRA=11,"
+         f"adelay={int(lead*1000)}|{int(lead*1000)},"
          f"apad=whole_dur={sd:.3f},atrim=duration={sd:.3f},asetpts=PTS-STARTPTS,"
          f"asplit=2[dlgsc][dlgout];"
          f"[2:a]aresample=48000,atrim=start={bed_offset:.3f}:duration={sd:.3f},"
          f"asetpts=PTS-STARTPTS,volume={bed_vol}[bed];"
-         f"[bed][dlgsc]sidechaincompress=threshold=0.03:ratio=6:"
-         f"attack=200:release=500[ducked];"
+         f"[bed][dlgsc]sidechaincompress=threshold=0.05:ratio=2.5:"
+         f"attack=150:release=400[ducked];"
          f"[dlgout][ducked]amix=inputs=2:normalize=0[a]")
     run(["ffmpeg", "-y", "-v", "error", "-i", clip, "-i", dlg, "-i", str(bed),
          "-filter_complex", v + ";" + a,
