@@ -181,10 +181,13 @@ def _flute(mix, t, total, rng, amp=0.10, scale=None, start=2.0):
             tt = np.arange(s1 - s0) / SR
             atk = min(0.8, dur / 3); rel = min(1.2, dur / 3)
             env = np.minimum(1, tt / atk) * np.minimum(1, (dur - tt) / rel)
-            vib = 1 + 0.006 * np.sin(2 * np.pi * 5.2 * tt)
-            tone = (np.sin(2 * np.pi * f * vib * tt)
-                    + 0.22 * np.sin(2 * np.pi * 2 * f * vib * tt)
-                    + 0.07 * np.sin(2 * np.pi * 3 * f * vib * tt))
+            # proper vibrato: phase modulation with constant depth (a time-varying
+            # multiplier inside sin() makes the pitch wobble grow with note length)
+            vib_depth = 0.35  # radians -> gentle ~2 Hz pitch wobble at 5.2 Hz rate
+            phase = 2 * np.pi * f * tt + vib_depth * np.sin(2 * np.pi * 5.2 * tt)
+            tone = (np.sin(phase)
+                    + 0.22 * np.sin(2 * phase)
+                    + 0.07 * np.sin(3 * phase))
             mix[s0:s1] += amp * np.clip(env, 0, 1) * tone
         ct += 4.0 + rng.random() * 4.0
 
