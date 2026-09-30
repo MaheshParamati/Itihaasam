@@ -43,6 +43,26 @@ def probe_duration(path):
                        capture_output=True, text=True)
     return float(p.stdout.strip())
 
+def dialogue_gain(path, target=0.115):
+    # TTS voices come back at very different levels (Ekalavya ~2x the
+    # narrator, Drona ~1/2); level them so the ducking behaves the same
+    # under every voice. Loudness = RMS of the loudest quintile of samples
+    # (threshold-independent). Returns a linear gain, peak-capped at 0.89.
+    p = subprocess.run(["ffmpeg", "-v", "error", "-i", str(path),
+                        "-ac", "1", "-ar", "16000", "-f", "f32le", "-"],
+                       capture_output=True)
+    x = np.frombuffer(p.stdout, dtype=np.float32)
+    if len(x) == 0:
+        return 1.0
+    a = np.sort(np.abs(x))[::-1]
+    k = max(1, len(a) // 5)
+    loud = float(np.sqrt((a[:k] ** 2).mean()))
+    peak = float(a[0])
+    g = target / max(loud, 1e-4)
+    if peak * g > 0.89:
+        g = 0.89 / max(peak, 1e-4)
+    return round(g, 3)
+
 def count_frames(path):
     p = subprocess.run(["ffprobe", "-v", "error", "-count_frames",
                         "-select_streams", "v:0", "-show_entries",
@@ -97,6 +117,8 @@ def cmd_plan(cfg):
         clip_prompt = ". ".join(p for p in parts if p) + "."
         voice = cfg["narrator"]["voice"] if sp == "narrator" else chars[sp]["voice"]
         locale = cfg["narrator"].get("locale", "en_IN") if sp == "narrator" else chars[sp].get("locale", "en_IN")
+        dlg_files = glob.glob(str(ws / cfg.get("dialogue_pattern", "dialogue/beat-{nn}.mp3").format(nn=nn)))
+        gain = dialogue_gain(dlg_files[0]) if dlg_files else 1.0
         manifest_beats.append({
             "n": n, "nn": nn, "scene": b["scene"],
             "clip_prompt": clip_prompt, "refs": refs,
@@ -104,6 +126,8 @@ def cmd_plan(cfg):
             # "crop": scale-to-fill 16:9 with a slow vertical pan (for portrait
             # clips); "blur": full-frame blurred fill (default)
             "video_fill": b.get("video_fill", "blur"),
+            # linear gain leveling dialogue loudness across TTS voices
+            "dlg_gain": gain,
         })
 
     manifest = {
@@ -308,10 +332,10 @@ def build_segment(ws, asm, b, seg_path, bed_offset=0.0):
     v += f",trim=duration={sd:.3f},setpts=PTS-STARTPTS[v]"
     # the bed plays continuously across the scene: each beat starts it at its
     # scene offset instead of restarting from 0 (restarts read as a glitch)
-    # dialogue is loudness-normalized first: the TTS voices come back at very
-    # different levels (Ekalavya ~2.5x the narrator, Drona ~1/3), which made
+    # dialogue is leveled to a common loudness first (per-beat dlg_gain from
+    # plan): the TTS voices come back at very different levels, which made
     # the sidechain ducking crush the bed under loud voices and skip quiet ones
-    a = (f"[1:a]aresample=48000,loudnorm=I=-16:TP=-1.5:LRA=11,"
+    a = (f"[1:a]aresample=48000,volume={b.get('dlg_gain', 1.0)},"
          f"adelay={int(lead*1000)}|{int(lead*1000)},"
          f"apad=whole_dur={sd:.3f},atrim=duration={sd:.3f},asetpts=PTS-STARTPTS,"
          f"asplit=2[dlgsc][dlgout];"
